@@ -74,22 +74,29 @@ function fila(e, { mia = null } = {}) {
     ...(mia ? [['Tu oferta', mia.monto != null ? dinero(mia.monto) : 'no la escribiste']] : [['Publicado', fechaLarga(e.pub)], ['Ítems', e.items ? String(e.items) : null], ['Suelen presentarse', e.suelen]]),
   ]));
   if (mia) det.append(resultado(mia));
-  const acc = el('div', 'lic-row__acciones');
+  // LOS BOTONES, CON PESO SEGÚN LO QUE HACEN (propuesta del 20-oct; Jonathan: «están bien discretos»). Arriba, lo que se
+  // hace con la compra: ofertar (lleno), «Ya coticé» (con borde) y «Me interesa» (alternador). Abajo y discretos, ver el
+  // análisis y descartar: descartar no debe invitar a tocarlo por error.
+  const acc = el('div', 'lic-row__acciones demo-acc');
+  const fuertes = el('div', 'demo-acc__fuertes');
+  const suaves = el('div', 'demo-acc__suaves');
   const ver = el('a', 'lic-row__ver', 'Ver análisis completo'); ver.href = '#'; ver.addEventListener('click', (ev) => { ev.preventDefault(); toast('En la demo no hay análisis completo: es la ficha de siempre de cada oportunidad.'); });
-  acc.append(ver);
+  suaves.append(ver);
   if (!mia) {
-    const ext = el('a', 'lic-row__ext', 'Ofertar en PanamaCompra ↗'); ext.href = '#'; ext.addEventListener('click', (ev) => { ev.preventDefault(); toast('En el tablero real, esto abre la compra en PanamaCompra.'); });
-    acc.append(ext);
+    const ext = el('a', 'demo-btn demo-btn--lleno', 'Ofertar en PanamaCompra ↗'); ext.href = '#'; ext.addEventListener('click', (ev) => { ev.preventDefault(); toast('En el tablero real, esto abre la compra en PanamaCompra.'); });
     const on = estado.interesa.includes(e.id);
-    const int = textoBoton('lic-row__interesa', on ? '★ Me interesa' : '☆ Me interesa', () => { estado.interesa = on ? estado.interesa.filter((x) => x !== e.id) : [...estado.interesa, e.id]; guardar(); pintar(); });
+    const int = textoBoton('demo-btn demo-btn--alternar', on ? '★ Me interesa' : '☆ Me interesa', () => { estado.interesa = on ? estado.interesa.filter((x) => x !== e.id) : [...estado.interesa, e.id]; guardar(); pintar(); toast(on ? 'Quitada de «Me interesan».' : 'Guardada en «Me interesan».'); });
     int.setAttribute('aria-pressed', String(on));
-    acc.append(int, textoBoton('lic-row__completar', '✓ Ya coticé', () => yaCotice(e)), textoBoton('lic-row__descartar', estado.fuera.includes(e.id) ? 'Volver a mostrar' : 'No me interesa', () => { estado.fuera = estado.fuera.includes(e.id) ? estado.fuera.filter((x) => x !== e.id) : [...estado.fuera, e.id]; guardar(); pintar(); if (estado.fuera.includes(e.id)) toast('Listo: no te la volvemos a enseñar. Está en «Ver descartadas».'); }));
+    fuertes.append(ext, textoBoton('demo-btn demo-btn--borde', '✓ Ya coticé', () => yaCotice(e)), int);
+    suaves.append(textoBoton('demo-quieto', estado.fuera.includes(e.id) ? 'Volver a mostrar' : 'No me interesa', () => { estado.fuera = estado.fuera.includes(e.id) ? estado.fuera.filter((x) => x !== e.id) : [...estado.fuera, e.id]; guardar(); pintar(); if (estado.fuera.includes(e.id)) toast('Listo: no te la volvemos a enseñar. Está en «Ver descartadas».'); }));
   } else {
-    if (!mia.real && mia.fase === 'espera' && !e.sinCuadro) acc.append(textoBoton('demo-simular', '⏩ Simular: ya cerró', () => avanzar(mia, 'cerro')));
-    if (!mia.real && mia.fase === 'cerro' && e.resolucion) acc.append(textoBoton('demo-simular', '⏩ Simular: salió la resolución', () => avanzar(mia, 'adjudicada')));
-    if (mia.fase !== 'espera' && !e.sinCuadro) acc.append(textoBoton('lic-row__interesa', '✉ Ver el correo que te llega', (ev) => { const ya = d.querySelector('.demo-correo'); if (ya) ya.remove(); else det.insertBefore(correo(mia), acc); }));
-    acc.append(textoBoton('lic-row__descartar', 'Quitar de mis cotizaciones', () => { estado.mias = estado.mias.filter((x) => x !== mia); guardar(); pintar(); }));
+    if (!mia.real && mia.fase === 'espera' && !e.sinCuadro) fuertes.append(textoBoton('demo-simular', '⏩ Simular: ya cerró', () => avanzar(mia, 'cerro')));
+    if (!mia.real && mia.fase === 'cerro' && e.resolucion) fuertes.append(textoBoton('demo-simular', '⏩ Simular: salió la resolución', () => avanzar(mia, 'adjudicada')));
+    if (mia.fase !== 'espera' && !e.sinCuadro) fuertes.append(textoBoton('demo-btn demo-btn--borde', '✉ Ver el correo que te llega', () => { const ya = d.querySelector('.demo-correo'); if (ya) ya.remove(); else det.insertBefore(correo(mia), acc); }));
+    suaves.append(textoBoton('demo-quieto', 'Quitar de mis cotizaciones', () => { estado.mias = estado.mias.filter((x) => x !== mia); guardar(); pintar(); }));
   }
+  if (fuertes.children.length) acc.append(fuertes);
+  acc.append(suaves);
   det.append(acc);
   d.append(sum, det);
   if (mia?.abrir) { d.open = true; delete mia.abrir; guardar(); }
@@ -234,14 +241,17 @@ function pintar() {
   }
   lista.append(...filas);
   const cnt = $('#f-count'); if (cnt) cnt.textContent = cuentaTxt;
-  const n = $('[data-mias-n]'); if (n) n.textContent = estado.mias.length ? `(${estado.mias.length})` : '';
-  const dc = $('[data-descartes-cuenta]'); if (dc) dc.textContent = estado.fuera.length ? `${estado.fuera.length} descartada${estado.fuera.length > 1 ? 's' : ''} ·` : '';
-  for (const [sel, v] of [['[data-mias-ver]', 'mias'], ['[data-interesados-ver]', 'interesa'], ['[data-descartes-ver]', 'descartadas']]) { const b = $(sel); if (b) b.setAttribute('aria-pressed', String(ver === v)); }
+  const cuentas = { todas: abiertas.filter((e) => !estado.fuera.includes(e.id)).length, interesa: abiertas.filter((e) => estado.interesa.includes(e.id)).length, mias: estado.mias.length };
+  for (const p of document.querySelectorAll('.demo-pestana')) {
+    p.setAttribute('aria-selected', String(ver === p.dataset.vista));
+    const n = p.querySelector('[data-n]'); if (n) n.textContent = `(${cuentas[p.dataset.vista]})`;
+  }
+  const dc = $('[data-descartes-cuenta]'); if (dc) dc.textContent = '';
+  const bd = $('[data-descartes-ver]');
+  if (bd) { bd.textContent = ver === 'descartadas' ? 'Volver a las abiertas' : `Ver descartadas${estado.fuera.length ? ` (${estado.fuera.length})` : ''}`; bd.setAttribute('aria-pressed', String(ver === 'descartadas')); }
 }
-const cambiar = (v) => { estado.vista = estado.vista === v ? 'todas' : v; guardar(); pintar(); };
-$('[data-mias-ver]')?.addEventListener('click', () => cambiar('mias'));
-$('[data-interesados-ver]')?.addEventListener('click', () => cambiar('interesa'));
-$('[data-descartes-ver]')?.addEventListener('click', () => cambiar('descartadas'));
+for (const p of document.querySelectorAll('.demo-pestana')) p.addEventListener('click', () => { estado.vista = p.dataset.vista; guardar(); pintar(); });
+$('[data-descartes-ver]')?.addEventListener('click', () => { estado.vista = estado.vista === 'descartadas' ? 'todas' : 'descartadas'; guardar(); pintar(); });
 function reiniciar() { estado = { mias: estado.mias.filter((m) => m.real), fuera: [], interesa: [], vista: 'todas' }; guardar(); pintar(); }
 // Los enlaces del resto de la página (barra, filtros) no salen de la demo
 document.addEventListener('click', (ev) => { const a = ev.target.closest('a[href="#"]'); if (a && !a.closest('#demo-lista') && !a.closest('.demo-correo')) { ev.preventDefault(); toast('En la demo solo funciona el tablero.'); } });

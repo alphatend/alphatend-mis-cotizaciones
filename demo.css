@@ -47,3 +47,50 @@
 .demo-toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%) translateY(16px); opacity: 0; transition: .25s; background: var(--color-ink); color: var(--color-paper); padding: .6rem 1rem; border-radius: var(--radius-sm); font-size: .9rem; box-shadow: var(--shadow-lg); max-width: calc(100vw - 32px); width: max-content; z-index: 100; pointer-events: none; }
 .demo-toast.ver { opacity: 1; transform: translateX(-50%) translateY(0); }
 .feed__descartes-ver[aria-pressed="true"] { background: var(--color-accent-suave); border-color: var(--color-accent-ink); }
+
+/* ── PROPUESTA DEL 20-OCT: botones con peso según lo que hacen, y pestañas en la barra de la lista ───────────── */
+/* La barra: «Abiertas · Me interesan · Mis cotizaciones» como pestañas; «Ver descartadas», un enlace. */
+.demo-pestanas { display: flex; gap: .25rem; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; flex: 1 1 auto; min-width: 0; }
+.demo-pestanas::-webkit-scrollbar { display: none; }
+.demo-pestana { flex: 0 0 auto; border: 1px solid transparent; background: none; color: var(--color-body); font: inherit; font-size: .9rem; font-weight: 600; padding: .45rem .8rem; border-radius: var(--radius-pill); cursor: pointer; white-space: nowrap; }
+.demo-pestana:hover { background: var(--color-panel); color: var(--color-ink); }
+.demo-pestana[aria-selected="true"] { background: var(--color-accent-suave); border-color: var(--color-accent-ink); color: var(--color-accent-ink); }
+.demo-pestana [data-n] { color: var(--color-muted); font-weight: 500; }
+.demo-pestana[aria-selected="true"] [data-n] { color: inherit; }
+.demo-pestana:focus-visible, .demo-link:focus-visible, .demo-btn:focus-visible, .demo-quieto:focus-visible { outline: 2px solid var(--color-accent-ink); outline-offset: 2px; }
+.demo-descartadas { margin: 0; font-size: .85rem; }
+.demo-link { background: none; border: 0; padding: .2rem 0; font: inherit; color: var(--color-muted); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.demo-link:hover { color: var(--color-ink); }
+.demo-link[aria-pressed="true"] { color: var(--color-accent-ink); }
+
+/* La fila abierta: arriba lo que se hace con la compra; abajo, discreto, ver el análisis y descartar. */
+.lic-row__acciones.demo-acc { display: grid; gap: .7rem; font-size: .9rem; }
+.demo-acc__fuertes { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem; }
+.demo-acc__suaves { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .6rem 1rem; font-size: .85rem; }
+.demo-btn { display: inline-flex; align-items: center; justify-content: center; gap: .4em; min-height: 40px; padding: .5rem 1rem; border-radius: var(--radius-sm); border: 1px solid transparent; font: inherit; font-weight: 650; font-size: .92rem; line-height: 1.2; text-decoration: none; cursor: pointer; white-space: nowrap; }
+.demo-btn--lleno { background: var(--color-accent); color: var(--color-sobre-accent); }
+.demo-btn--lleno:hover { background: color-mix(in srgb, var(--color-accent) 88%, #000); }
+.demo-btn--borde { background: var(--color-surface); color: var(--color-accent-ink); border-color: var(--color-accent-ink); }
+.demo-btn--borde:hover { background: var(--color-accent-suave); }
+.demo-btn--alternar { background: none; color: var(--color-body); border-color: var(--color-line); }
+.demo-btn--alternar:hover { border-color: var(--color-borde-campo); color: var(--color-ink); }
+.demo-btn--alternar[aria-pressed="true"] { color: var(--color-accent-ink); border-color: var(--color-accent-ink); background: var(--color-accent-suave); }
+.demo-quieto { background: none; border: 0; padding: .3rem 0; font: inherit; color: var(--color-muted); cursor: pointer; }
+.demo-quieto:hover { color: var(--color-ink); text-decoration: underline; text-underline-offset: 3px; }
+.demo-acc .demo-simular { min-height: 40px; }
+
+/* En el teléfono: los botones a lo ancho, uno debajo del otro, con 44 px de alto para el dedo. */
+@media (max-width: 560px) {
+  .demo-acc__fuertes { flex-direction: column; align-items: stretch; }
+  .demo-acc__fuertes .demo-btn, .demo-acc__fuertes .demo-simular { width: 100%; min-height: 44px; }
+  .demo-acc__suaves .demo-quieto, .demo-acc__suaves .lic-row__ver { min-height: 44px; display: inline-flex; align-items: center; }
+  .demo-pestanas { flex-basis: 100%; }
+}
+/* La etiqueta «Ejemplo» no se estira: en el teléfono el tablero pone cada marca a lo ancho (flex-basis 100 %). */
+.lic-row__marcas > span.demo-chip { flex: 0 0 auto; margin-left: 0; }
+/* En el teléfono, las tres pestañas caben a la vez: «Mis cotizaciones», que es lo nuevo, no puede quedar cortada. */
+@media (max-width: 560px) {
+  .demo-pestanas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .3rem; overflow: visible; }
+  .demo-pestana { white-space: normal; text-align: center; font-size: .82rem; padding: .45rem .3rem; line-height: 1.2; min-height: 44px; }
+  .demo-pestana [data-n] { display: block; }
+}
