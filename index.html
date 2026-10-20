@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="es-PA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Mis cotizaciones · alphatend</title>
+<meta name="description" content="Demo de «Ya coticé»: alphatend sigue la cotización que mandaste y te dice quién ofertó, a cuánto y en qué lugar quedaste.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400..800&display=swap" rel="stylesheet">
+<style>
+/* Los colores, la letra y los radios son los de alphatend.com (src/styles/global.css). */
+:root {
+  --paper: #f8f9fa; --surface: #fff; --panel: #f1f3f4; --ink: #202124; --body: #3c4043; --muted: #5f6368; --line: #dadce0;
+  --barra: #27292e; --barra-tinta: #e7e9f1; --barra-muted: #abaeb6;
+  --accent: #0058c6; --accent-suave: #e8f0fe; --sobre-accent: #fff;
+  --urgent: #c5221f; --aviso: #a35200; --aviso-suave: #fef7e0; --exito: #137333; --exito-suave: #e6f4ea;
+  --demo: #7c4dff; --demo-suave: #f1ebff;
+  --shadow-sm: 0 1px 2px rgba(60,64,67,.15), 0 1px 1px rgba(60,64,67,.08);
+  --shadow-lg: 0 8px 24px rgba(60,64,67,.18), 0 2px 6px rgba(60,64,67,.12);
+  --r-sm: 7px; --r-md: 11px; --r-pill: 999px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #27292e; --surface: #303237; --panel: #393b42; --ink: #e7e9f1; --body: #cdd0d8; --muted: #abaeb6; --line: #4a4d55;
+    --barra: #202124; --accent: #8ab4f8; --accent-suave: #2f3b52; --sobre-accent: #202124;
+    --urgent: #f28b82; --aviso: #fdd663; --aviso-suave: #3f3a24; --exito: #81c995; --exito-suave: #24382b;
+    --demo: #b39dff; --demo-suave: #352f4a;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.3); --shadow-lg: 0 16px 48px rgba(0,0,0,.45);
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--paper); color: var(--body); font: 400 16px/1.5 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif; }
+button, input { font: inherit; color: inherit; }
+.tab-n, .num { font-variant-numeric: tabular-nums; }
+.barra { background: var(--barra); color: var(--barra-tinta); }
+.barra__in { max-width: 920px; margin: 0 auto; padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
+.marca { font-weight: 800; letter-spacing: -.01em; font-size: 19px; display: flex; align-items: center; gap: 8px; }
+.marca svg { width: 22px; height: 22px; }
+.barra__demo { margin-left: auto; font-size: 13px; color: var(--barra-muted); border: 1px solid #3c3f45; border-radius: var(--r-pill); padding: 3px 10px; }
+main { max-width: 920px; margin: 0 auto; padding: 22px 16px 60px; }
+h1 { color: var(--ink); font-size: clamp(24px, 5vw, 32px); line-height: 1.15; letter-spacing: -.02em; margin: 6px 0 10px; }
+.lead { font-size: 17px; margin: 0 0 6px; max-width: 62ch; }
+.nota-demo { display: inline-flex; gap: 8px; align-items: flex-start; background: var(--demo-suave); color: var(--ink); border-radius: var(--r-md); padding: 10px 12px; font-size: 14px; margin: 12px 0 4px; max-width: 70ch; }
+.nota-demo b { color: var(--demo); }
+.pestanas { display: flex; gap: 8px; margin: 22px 0 14px; flex-wrap: wrap; }
+.pestana { border: 1px solid var(--line); background: var(--surface); border-radius: var(--r-pill); padding: 8px 16px; cursor: pointer; font-weight: 600; box-shadow: var(--shadow-sm); }
+.pestana[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--sobre-accent); }
+.pestana .cuenta { display: inline-block; min-width: 22px; padding: 0 6px; margin-left: 6px; border-radius: var(--r-pill); background: var(--panel); color: var(--ink); font-size: 13px; text-align: center; }
+.pestana[aria-selected="true"] .cuenta { background: rgba(255,255,255,.22); color: inherit; }
+.panel { display: none; }
+.panel.activo { display: block; }
+.fila, .tarjeta { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow-sm); padding: 14px 16px; margin-bottom: 12px; }
+.fila__top { display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; }
+.fila h3, .tarjeta h3 { color: var(--ink); font-size: 17px; line-height: 1.3; margin: 0 0 4px; }
+.meta { font-size: 14px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 700; padding: 2px 9px; border-radius: var(--r-pill); background: var(--panel); color: var(--ink); white-space: nowrap; }
+.chip--ejemplo { background: var(--demo-suave); color: var(--demo); }
+.chip--espera { background: var(--aviso-suave); color: var(--aviso); }
+.chip--cerro { background: var(--accent-suave); color: var(--accent); }
+.chip--adj { background: var(--exito-suave); color: var(--exito); }
+.chip--vivo { background: var(--exito-suave); color: var(--exito); }
+.monto { font-weight: 800; color: var(--ink); font-size: 17px; white-space: nowrap; }
+.acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.btn { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: var(--r-sm); padding: 7px 12px; font-size: 14.5px; font-weight: 600; cursor: pointer; }
+.btn:hover { background: var(--panel); }
+.btn--ya { border-color: var(--exito); color: var(--exito); }
+.btn--prim { background: var(--accent); border-color: var(--accent); color: var(--sobre-accent); }
+.btn--prim:hover { filter: brightness(1.06); background: var(--accent); }
+.btn--demo { border: 1px dashed var(--demo); color: var(--demo); background: transparent; }
+.btn--demo:hover { background: var(--demo-suave); }
+.btn[aria-pressed="true"] { background: var(--accent-suave); border-color: var(--accent); color: var(--accent); }
+.vacio { text-align: center; padding: 34px 16px; color: var(--muted); border: 1px dashed var(--line); border-radius: var(--r-md); }
+.estado { margin: 10px 0 0; font-size: 15px; }
+.estado b { color: var(--ink); }
+.resumen { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 12px 0 4px; }
+.resumen div { background: var(--panel); border-radius: var(--r-sm); padding: 8px 10px; }
+.resumen span { display: block; font-size: 12.5px; color: var(--muted); }
+.resumen strong { color: var(--ink); font-size: 18px; }
+.tabla { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14.5px; }
+.tabla th { text-align: left; font-size: 12.5px; color: var(--muted); font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.tabla td { padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.tabla td.num, .tabla th.num { text-align: right; white-space: nowrap; }
+.tabla tr.tuya td { background: var(--accent-suave); font-weight: 700; color: var(--ink); }
+.tabla .pos { color: var(--muted); width: 2.2em; }
+.tabla-env { overflow-x: auto; }
+.etq-movil { display: none; }
+@media (max-width: 560px) { .tabla th:last-child, .tabla td:last-child { display: none; } .etq-movil { display: inline-block; margin-top: 3px; } .tabla td { padding: 7px 6px; } }
+.etq { font-size: 12px; font-weight: 700; padding: 1px 7px; border-radius: var(--r-pill); white-space: nowrap; }
+.etq--rec { background: var(--exito-suave); color: var(--exito); }
+.etq--desc { background: var(--panel); color: var(--urgent); }
+.aviso-cm { background: var(--panel); border-radius: var(--r-sm); padding: 10px 12px; margin-top: 10px; font-size: 14.5px; }
+.pie-tarjeta { margin-top: 10px; font-size: 13px; color: var(--muted); }
+.adj { margin-top: 12px; padding: 10px 12px; border-left: 4px solid var(--exito); background: var(--exito-suave); border-radius: 0 var(--r-sm) var(--r-sm) 0; color: var(--ink); }
+dialog { border: none; border-radius: var(--r-md); padding: 0; box-shadow: var(--shadow-lg); background: var(--surface); color: var(--body); width: min(420px, calc(100vw - 32px)); }
+dialog::backdrop { background: rgba(32,33,36,.45); }
+.dlg { padding: 18px; }
+.dlg h2 { margin: 0 0 4px; color: var(--ink); font-size: 19px; }
+.dlg p { margin: 0 0 12px; font-size: 14.5px; color: var(--muted); }
+.campo { display: flex; align-items: center; border: 1px solid #80868b; border-radius: var(--r-sm); background: var(--surface); }
+.campo span { padding: 0 4px 0 12px; color: var(--muted); font-weight: 600; }
+.campo input { border: 0; outline: 0; padding: 10px 12px 10px 4px; width: 100%; background: transparent; font-variant-numeric: tabular-nums; }
+.campo:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-suave); }
+.dlg__acc { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+.toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%) translateY(20px); opacity: 0; transition: .25s; background: var(--ink); color: var(--paper); padding: 10px 16px; border-radius: var(--r-sm); font-size: 14.5px; box-shadow: var(--shadow-lg); width: max-content; max-width: calc(100vw - 32px); z-index: 10; }
+.toast.ver { opacity: 1; transform: translateX(-50%) translateY(0); }
+.correo { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); margin-top: 12px; overflow: hidden; }
+.correo__cab { background: var(--panel); padding: 10px 14px; font-size: 13.5px; }
+.correo__cab b { color: var(--ink); }
+.correo__cuerpo { padding: 14px; font-size: 15px; }
+.correo__cuerpo p { margin: 0 0 10px; }
+.real { margin-top: 34px; padding-top: 22px; border-top: 1px solid var(--line); }
+.real h2 { color: var(--ink); margin: 0 0 6px; font-size: 22px; letter-spacing: -.01em; }
+.form-real { display: grid; gap: 10px; margin-top: 14px; max-width: 640px; }
+.form-real label { font-size: 13.5px; font-weight: 600; color: var(--ink); display: block; margin-bottom: 4px; }
+.form-real .campo input { padding-left: 12px; }
+.dos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 560px) { .dos { grid-template-columns: 1fr; } .fila__top { flex-direction: column; gap: 4px; } .tabla .ocultar-movil { display: none; } }
+.error { color: var(--urgent); font-size: 14.5px; margin: 6px 0 0; }
+footer { max-width: 920px; margin: 0 auto; padding: 0 16px 40px; font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+<header class="barra"><div class="barra__in">
+  <span class="marca"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#8ab4f8" d="M3 20 12 4l3.2 5.7L9.6 20z"/><path fill="#e7e9f1" d="M13.4 20 16.4 14.6 19.4 20z"/></svg>alphatend</span>
+  <span class="barra__demo">Demo · Mis cotizaciones</span>
+</div></header>
+
+<main>
+  <h1>Mandaste la cotización. ¿En qué quedó?</h1>
+  <p class="lead">Marca la compra con <b>«✓ Ya coticé»</b> y alphatend la sigue por ti. Cuando PanamaCompra abre las ofertas, te dice quién ofertó, a cuánto y en qué lugar quedaste. Cuando sale la resolución, a quién se adjudicó.</p>
+  <p class="nota-demo"><b>Demo.</b> <span>El tablero de abajo trae compras de ejemplo, con empresas inventadas, y botones morados para adelantar el tiempo. Más abajo puedes probar con una cotización real tuya, leída en vivo de PanamaCompra.</span></p>
+
+  <div class="pestanas" role="tablist">
+    <button class="pestana" role="tab" aria-selected="true" data-tab="tablero">Tablero<span class="cuenta tab-n" id="n-tablero">3</span></button>
+    <button class="pestana" role="tab" aria-selected="false" data-tab="mias">Mis cotizaciones<span class="cuenta tab-n" id="n-mias">0</span></button>
+  </div>
+
+  <section class="panel activo" id="p-tablero" role="tabpanel"></section>
+  <section class="panel" id="p-mias" role="tabpanel"></section>
+
+  <section class="real" id="real">
+    <h2>Pruébalo con una de tus cotizaciones</h2>
+    <p class="lead">Pega el enlace de PanamaCompra de una compra en la que ofertaste. Sirve el del pliego o el del cuadro de cotizaciones. La demo la lee en vivo y la pone en «Mis cotizaciones».</p>
+    <form class="form-real" id="form-real" autocomplete="off">
+      <div>
+        <label for="enlace">Enlace de PanamaCompra</label>
+        <div class="campo"><input id="enlace" inputmode="url" placeholder="https://www.panamacompra.gob.pa/Inicio/…"></div>
+      </div>
+      <div class="dos">
+        <div>
+          <label for="monto-real">Por cuánto ofertaste (opcional)</label>
+          <div class="campo"><span>B/.</span><input id="monto-real" inputmode="decimal" placeholder="0.00"></div>
+        </div>
+        <div>
+          <label for="nombre-real">Nombre con que ofertaste (opcional)</label>
+          <div class="campo"><input id="nombre-real" placeholder="Como sale en el cuadro"></div>
+        </div>
+      </div>
+      <div class="acciones" style="margin-top:2px">
+        <button class="btn btn--prim" type="submit">Seguir esta compra</button>
+        <button class="btn" type="button" id="ejemplo-real">Usar una cotización real del 16-oct</button>
+      </div>
+      <p class="error" id="error-real" hidden></p>
+    </form>
+  </section>
+</main>
+
+<footer>Demo de alphatend para enseñar una función que todavía no está en el producto. Las compras del tablero son de ejemplo y sus empresas, inventadas. Lo de «Pruébalo» se lee en vivo de PanamaCompra, con sus datos públicos. Lo que guardes aquí se queda solo en este navegador.</footer>
+
+<dialog id="dlg">
+  <form class="dlg" method="dialog" id="dlg-form">
+    <h2>✓ Ya coticé</h2>
+    <p id="dlg-que"></p>
+    <label for="dlg-monto" style="font-size:13.5px;font-weight:600;color:var(--ink)">¿Por cuánto ofertaste? (opcional)</label>
+    <div class="campo" style="margin-top:4px"><span>B/.</span><input id="dlg-monto" inputmode="decimal" placeholder="0.00"></div>
+    <p style="margin:8px 0 0">Así te decimos en qué lugar quedaste. Si no lo pones, te buscamos por el nombre de tu empresa.</p>
+    <div class="dlg__acc">
+      <button class="btn" value="cancelar" type="submit">Cancelar</button>
+      <button class="btn btn--prim" value="guardar" type="submit">Guardar</button>
+    </div>
+  </form>
+</dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script type="module">
+// ── Ejemplos: compras y empresas inventadas, para mostrar cada estado ─────────────────────────────────────────
+const HOY = new Date();
+const enDias = (d, h = 10, m = 0) => { const x = new Date(HOY); x.setDate(x.getDate() + d); x.setHours(h, m, 0, 0); return x.toISOString(); };
+const EJEMPLOS = [
+  {
+    id: 'ej-cotizacion', tipo: 'Cotización en línea', titulo: 'Útiles de oficina y papel bond para el segundo semestre',
+    entidad: 'Institución de ejemplo', numero: 'EJEMPLO-CL-000101', estimado: 2950, cierre: enDias(0, 15),
+    propuesta: 2750, // la del dueño de la demo, si no escribe otra
+    rivales: [['Distribuidora Atlántico, S.A.', 2610.4], ['Comercial Las Cumbres', 2798], ['Papelería del Valle', 2905.1], ['Suministros Omega', 3120]],
+  },
+  {
+    id: 'ej-licitacion', tipo: 'Licitación pública', titulo: 'Mantenimiento preventivo y correctivo de aires acondicionados',
+    entidad: 'Institución de ejemplo', numero: 'EJEMPLO-LP-000045', estimado: 48500, cierre: enDias(8, 10),
+    propuesta: 43900, resolucion: 'Resolución N.º 045 (ejemplo)',
+    rivales: [['Frío Total, S.A.', 41980, true], ['Climas del Pacífico', 44350], ['Refrigeración Chiriquí', 47200]],
+  },
+  {
+    id: 'ej-menor', tipo: 'Compra menor hasta 10,000', titulo: '40 galones de pintura de tráfico amarilla',
+    entidad: 'Institución de ejemplo', numero: 'EJEMPLO-CM-000310', estimado: 3400, cierre: enDias(1, 12), propuesta: 3150, sinCuadro: true,
+  },
+];
+
+// ── Estado: lo que el usuario marcó. Se recuerda en este navegador (si se puede). ─────────────────────────────
+const CLAVE = 'demo-mis-cotizaciones-v1';
+let estado = { mias: [], fuera: [], interesa: [] };
+try { const s = JSON.parse(localStorage.getItem(CLAVE) || 'null'); if (s && Array.isArray(s.mias)) estado = { fuera: [], interesa: [], ...s }; } catch { /* sin almacenamiento */ }
+const guardar = () => { try { localStorage.setItem(CLAVE, JSON.stringify(estado)); } catch { /* sin almacenamiento */ } };
+
+// ── Utilidades ────────────────────────────────────────────────────────────────────────────────────────────
+const $ = (s, r = document) => r.querySelector(s);
+const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+const dinero = (n) => n == null ? '—' : 'B/. ' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const MES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+const hora = (d) => { const h = d.getHours(); return `${h % 12 || 12}:${String(d.getMinutes()).padStart(2, '0')} ${h >= 12 ? 'p. m.' : 'a. m.'}`; };
+const fechaCorta = (iso) => { if (!iso) return ''; const d = new Date(iso); const mismoDia = d.toDateString() === new Date().toDateString(); return `${mismoDia ? 'hoy' : `el ${d.getDate()} ${MES[d.getMonth()]}`}, ${hora(d)}`; };
+const ordinal = (n) => `${n}.ª`;
+const numero = (s) => { const n = Number(String(s || '').replace(/[^\d.]/g, '')); return Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : null; };
+const toast = (t) => { const x = $('#toast'); x.textContent = t; x.classList.add('ver'); clearTimeout(toast.t); toast.t = setTimeout(() => x.classList.remove('ver'), 3600); };
+
+// ── Pestañas ──────────────────────────────────────────────────────────────────────────────────────────────
+function abrir(tab) {
+  document.querySelectorAll('.pestana').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === tab)));
+  $('#p-tablero').classList.toggle('activo', tab === 'tablero');
+  $('#p-mias').classList.toggle('activo', tab === 'mias');
+}
+document.querySelectorAll('.pestana').forEach((b) => b.addEventListener('click', () => abrir(b.dataset.tab)));
+
+// ── El tablero ────────────────────────────────────────────────────────────────────────────────────────────
+function pintarTablero() {
+  const p = $('#p-tablero'); p.replaceChildren();
+  const visibles = EJEMPLOS.filter((e) => !estado.fuera.includes(e.id) && !estado.mias.some((m) => m.id === e.id));
+  $('#n-tablero').textContent = visibles.length;
+  if (!visibles.length) {
+    const v = el('div', 'vacio'); v.append(el('p', '', 'Ya no quedan compras de ejemplo en el tablero.'));
+    const b = el('button', 'btn btn--demo', 'Volver a empezar la demo'); b.type = 'button'; b.onclick = reiniciar; v.append(b);
+    p.append(v); return;
+  }
+  for (const e of visibles) {
+    const f = el('article', 'fila');
+    const top = el('div', 'fila__top');
+    const izq = el('div');
+    izq.append(el('h3', '', e.titulo));
+    const meta = el('div', 'meta');
+    meta.append(el('span', 'chip chip--ejemplo', 'Ejemplo'), el('span', '', e.tipo), el('span', '', e.entidad), el('span', '', `Cierra ${fechaCorta(e.cierre)}`));
+    izq.append(meta);
+    top.append(izq, el('span', 'monto num', dinero(e.estimado)));
+    const acc = el('div', 'acciones');
+    const interesa = el('button', 'btn', '☆ Me interesa'); interesa.type = 'button';
+    interesa.setAttribute('aria-pressed', String(estado.interesa.includes(e.id)));
+    interesa.onclick = () => { const on = !estado.interesa.includes(e.id); estado.interesa = on ? [...estado.interesa, e.id] : estado.interesa.filter((x) => x !== e.id); guardar(); interesa.setAttribute('aria-pressed', String(on)); interesa.textContent = on ? '★ Me interesa' : '☆ Me interesa'; };
+    if (estado.interesa.includes(e.id)) interesa.textContent = '★ Me interesa';
+    const ya = el('button', 'btn btn--ya', '✓ Ya coticé'); ya.type = 'button'; ya.onclick = () => yaCotice(e);
+    const no = el('button', 'btn', 'No me interesa'); no.type = 'button';
+    no.onclick = () => { estado.fuera.push(e.id); guardar(); pintarTablero(); toast('Listo: no te la volvemos a enseñar.'); };
+    acc.append(interesa, ya, no);
+    f.append(top, acc);
+    p.append(f);
+  }
+}
+
+// «Ya coticé»: pregunta el monto (opcional) y la pasa a «Mis cotizaciones»
+function yaCotice(e) {
+  const d = $('#dlg'); $('#dlg-que').textContent = e.titulo; $('#dlg-monto').value = e.propuesta.toLocaleString('en-US', { minimumFractionDigits: 2 });
+  d.onclose = () => {
+    if (d.returnValue !== 'guardar' || estado.mias.some((x) => x.id === e.id)) return;
+    estado.mias.unshift({ id: e.id, ejemplo: true, monto: numero($('#dlg-monto').value), fase: 'espera', marcada: new Date().toISOString() });
+    guardar(); pintarTodo();
+    toast('Guardada en «Mis cotizaciones». Te avisamos cuando PanamaCompra abra las ofertas.');
+  };
+  d.returnValue = ''; d.showModal(); setTimeout(() => $('#dlg-monto').select(), 30);
+}
+
+// ── Mis cotizaciones ──────────────────────────────────────────────────────────────────────────────────────
+// Cada oferta: { empresa, monto, recomendada, descalificada, tuya }
+function ofertasDe(m) {
+  if (m.real) return m.ofertas || [];
+  const e = EJEMPLOS.find((x) => x.id === m.id);
+  if (!e?.rivales) return [];
+  const tuya = m.monto ?? e.propuesta;
+  const todas = [...e.rivales.map(([empresa, monto]) => ({ empresa, monto })), { empresa: 'Tu empresa', monto: tuya, tuya: true }];
+  todas.sort((a, b) => a.monto - b.monto);
+  // en el ejemplo, la comisión recomienda la más barata que cumple; «Refrigeración Chiriquí» queda descalificada
+  for (const o of todas) if (o.empresa === 'Refrigeración Chiriquí') o.descalificada = true;
+  const rec = todas.find((o) => !o.descalificada); if (rec) rec.recomendada = true;
+  return todas;
+}
+// En qué lugar quedó: por el monto que escribió o por el nombre
+function laTuya(m, ofertas) {
+  let i = ofertas.findIndex((o) => o.tuya);
+  if (i < 0 && m.monto != null) i = ofertas.findIndex((o) => Math.abs(o.monto - m.monto) < 0.01);
+  if (i < 0 && m.nombre) { const n = m.nombre.toLowerCase().trim(); i = ofertas.findIndex((o) => (o.empresa || '').toLowerCase().includes(n)); }
+  return i;
+}
+
+function pintarMias() {
+  const p = $('#p-mias'); p.replaceChildren();
+  $('#n-mias').textContent = estado.mias.length;
+  if (!estado.mias.length) {
+    const v = el('div', 'vacio');
+    v.append(el('p', '', 'Todavía no has marcado ninguna. En el tablero, toca «✓ Ya coticé» en una compra.'));
+    const b = el('button', 'btn', 'Ir al tablero'); b.type = 'button'; b.onclick = () => abrir('tablero'); v.append(b);
+    p.append(v); return;
+  }
+  for (const m of estado.mias) p.append(tarjeta(m));
+}
+
+function tarjeta(m) {
+  const e = m.real ? m : EJEMPLOS.find((x) => x.id === m.id);
+  const t = el('article', 'tarjeta');
+  const top = el('div', 'fila__top');
+  const izq = el('div');
+  izq.append(el('h3', '', e.titulo));
+  const meta = el('div', 'meta');
+  meta.append(el('span', m.real ? 'chip chip--vivo' : 'chip chip--ejemplo', m.real ? 'En vivo' : 'Ejemplo'), el('span', '', e.tipo), el('span', '', e.entidad), el('span', 'num', e.numero));
+  izq.append(meta);
+  top.append(izq);
+  t.append(top);
+
+  const ofertas = ofertasDe(m);
+  const sinCuadro = m.real ? m.sinCuadro : e.sinCuadro;
+  const fase = m.real ? m.fase : m.fase;
+
+  if (sinCuadro) {
+    t.append(chipEstado('Compra menor', 'chip--espera'));
+    const a = el('div', 'aviso-cm');
+    a.append('PanamaCompra no publica el cuadro de ofertas de las compras menores. Si el ganador llega en los datos que PanamaCompra publica cada día, te lo decimos aquí y por correo.');
+    t.append(a);
+    t.append(pie(m));
+    t.append(accionesTarjeta(m, []));
+    return t;
+  }
+
+  if (fase === 'espera') {
+    t.append(chipEstado(`Esperando el cierre · ${fechaCorta(e.cierre)}`, 'chip--espera'));
+    t.append(el('p', 'estado', 'Las ofertas son cerradas hasta la apertura. Apenas PanamaCompra las abra, verás aquí quién ofertó y a cuánto, y te llega un correo.'));
+    t.append(pie(m));
+    t.append(accionesTarjeta(m, [['⏩ Simular: ya cerró', () => avanzar(m, 'cerro')]]));
+    return t;
+  }
+
+  // cerró: el cuadro. Si su oferta no aparece (otro nombre, un monto redondeado), se pone su monto en la lista como
+  // referencia, marcado «no está en el cuadro», para decirle en qué lugar habría quedado.
+  let lista = ofertas, i = laTuya(m, ofertas), hipotetica = false;
+  if (i < 0 && m.monto != null) {
+    lista = [...ofertas, { empresa: 'Tu monto', monto: m.monto, hipotetica: true }].sort((a, b) => (a.monto ?? Infinity) - (b.monto ?? Infinity));
+    i = lista.findIndex((o) => o.hipotetica); hipotetica = true;
+  }
+  const rec = ofertas.find((o) => o.recomendada);
+  const tuya = i >= 0 ? lista[i] : null;
+  t.append(chipEstado(fase === 'adjudicada' ? 'Adjudicada' : 'Cerró · ya se ven las ofertas', fase === 'adjudicada' ? 'chip--adj' : 'chip--cerro'));
+
+  const r = el('div', 'resumen');
+  const caja = (lbl, val) => { const d = el('div'); d.append(el('span', '', lbl), el('strong', 'num', val)); return d; };
+  r.append(caja('Ofertas', String(ofertas.length)));
+  r.append(caja(hipotetica ? 'Con tu monto, quedabas' : 'Tu lugar', tuya ? `${ordinal(i + 1)} de ${lista.length}` : '—'));
+  if (rec) r.append(caja('La recomendada', dinero(rec.monto)));
+  if (tuya && rec && !tuya.recomendada) r.append(caja('Te faltó', dinero(tuya.monto - rec.monto)));
+  t.append(r);
+
+  const frase = el('p', 'estado');
+  if (tuya?.recomendada) frase.append(el('b', '', 'La tuya es la recomendada. '), 'Falta la orden de compra o la resolución para que sea definitiva.');
+  else if (hipotetica && rec) frase.append('No encontramos tu oferta en el cuadro. Con tu monto, ', el('b', '', dinero(tuya.monto)), ', habrías quedado ', el('b', '', `${ordinal(i + 1)} de ${lista.length}`), '. La recomendada fue ', el('b', '', rec.empresa), `, con ${dinero(rec.monto)}.`);
+  else if (tuya && rec) frase.append('Quedaste ', el('b', '', `${ordinal(i + 1)} de ${ofertas.length}`), '. La recomendada fue ', el('b', '', rec.empresa), `, con ${dinero(rec.monto)}: ${dinero(tuya.monto - rec.monto)} menos que la tuya.`);
+  else if (rec) frase.append('La recomendada fue ', el('b', '', rec.empresa), `, con ${dinero(rec.monto)}. No encontramos tu oferta en el cuadro: escribe tu monto o el nombre con que ofertaste.`);
+  else frase.append('El cuadro todavía no marca una recomendada.');
+  t.append(frase);
+
+  // la tabla del cuadro
+  const tabla = el('table', 'tabla');
+  const th = el('tr'); for (const [h, c] of [['#', 'pos'], ['Empresa', ''], ['Oferta', 'num'], ['', '']]) th.append(el('th', c, h));
+  const thead = el('thead'); thead.append(th); tabla.append(thead);
+  const tb = el('tbody');
+  lista.forEach((o, k) => {
+    const tr = el('tr', k === i ? 'tuya' : '');
+    tr.append(el('td', 'pos num', String(k + 1)), el('td', '', k === i && !m.real ? 'Tu empresa' : o.empresa), el('td', 'num', dinero(o.monto)));
+    const est = el('td');
+    const etq = o.hipotetica ? ['etq--desc', 'No está en el cuadro'] : o.recomendada ? ['etq--rec', 'Recomendada'] : o.descalificada ? ['etq--desc', 'Descalificada'] : null;
+    if (etq) {
+      est.append(el('span', `etq ${etq[0]}`, etq[1]));
+      const movil = el('span', `etq etq-movil ${etq[0]}`, etq[1]); tr.children[1].append(el('br', 'etq-movil'), movil); // en el teléfono va bajo el nombre
+    }
+    tr.append(est); tb.append(tr);
+  });
+  tabla.append(tb); const env = el('div', 'tabla-env'); env.append(tabla); t.append(env);
+
+  if (fase === 'adjudicada' && rec) {
+    const a = el('div', 'adj');
+    a.append(el('b', '', `Adjudicada a ${rec.tuya ? 'tu empresa' : rec.empresa} por ${dinero(rec.monto)}.`), ` ${e.resolucion || ''}`);
+    t.append(a);
+  }
+  t.append(pie(m));
+
+  const extra = [];
+  if (!m.real && fase === 'cerro' && e.resolucion) extra.push(['⏩ Simular: salió la resolución', () => avanzar(m, 'adjudicada')]);
+  t.append(accionesTarjeta(m, extra, { correo: true, ofertas: lista, i, rec, hipotetica }));
+  return t;
+}
+
+const chipEstado = (txt, cls) => { const p = el('p', '', null); p.style.margin = '10px 0 0'; p.append(el('span', `chip ${cls}`, txt)); return p; };
+function pie(m) {
+  const marc = new Date(m.marcada);
+  const txt = m.real ? `Leído en vivo de PanamaCompra ${fechaCorta(m.leido)}. Las ofertas y la recomendación son las del cuadro de propuestas; «recomendada» no es todavía «ganó».`
+    : `Marcada ${fechaCorta(marc.toISOString())}${m.monto ? ` · tu oferta: ${dinero(m.monto)}` : ''}.`;
+  return el('p', 'pie-tarjeta', txt);
+}
+function accionesTarjeta(m, extra, correo) {
+  const acc = el('div', 'acciones');
+  for (const [txt, fn] of extra) { const b = el('button', 'btn btn--demo', txt); b.type = 'button'; b.onclick = fn; acc.append(b); }
+  if (correo) {
+    const b = el('button', 'btn', '✉ Ver el correo que te llega'); b.type = 'button';
+    b.onclick = () => { const ya = b.closest('.tarjeta').querySelector('.correo'); if (ya) { ya.remove(); return; } b.closest('.tarjeta').append(vistaCorreo(m, correo)); };
+    acc.append(b);
+  }
+  const q = el('button', 'btn', 'Quitar'); q.type = 'button';
+  q.onclick = () => { estado.mias = estado.mias.filter((x) => x !== m); guardar(); pintarTodo(); };
+  acc.append(q);
+  return acc;
+}
+function vistaCorreo(m, { ofertas, i, rec, hipotetica }) {
+  const e = m.real ? m : EJEMPLOS.find((x) => x.id === m.id);
+  const tuya = i >= 0 ? ofertas[i] : null;
+  const asunto = m.fase === 'adjudicada' ? `Se adjudicó «${e.titulo}»` : tuya && !hipotetica ? `Salió el cuadro de tu cotización: quedaste ${ordinal(i + 1)} de ${ofertas.length}` : `Salió el cuadro de tu cotización: ${ofertas.filter((o) => !o.hipotetica).length} ofertas`;
+  const c = el('div', 'correo');
+  const cab = el('div', 'correo__cab');
+  cab.append(el('div', '', null)); cab.firstChild.append(el('b', '', 'De: '), 'alphatend <alertas@alphatend.com>');
+  const a = el('div'); a.append(el('b', '', 'Asunto: '), asunto); cab.append(a);
+  const cu = el('div', 'correo__cuerpo');
+  cu.append(el('p', '', `${e.titulo} · ${e.entidad} · ${e.numero}`));
+  if (m.fase === 'adjudicada' && rec) cu.append(el('p', '', `Se adjudicó a ${rec.tuya ? 'tu empresa' : rec.empresa} por ${dinero(rec.monto)}. ${e.resolucion || ''}`));
+  else if (hipotetica && rec) cu.append(el('p', '', `No encontramos tu oferta en el cuadro. Con tu monto, ${dinero(tuya.monto)}, habrías quedado ${ordinal(i + 1)} de ${ofertas.length}. La recomendada fue ${rec.empresa}, con ${dinero(rec.monto)}.`));
+  else if (tuya && rec && !tuya.recomendada) cu.append(el('p', '', `Quedaste ${ordinal(i + 1)} de ${ofertas.length}. La recomendada fue ${rec.empresa}, con ${dinero(rec.monto)}: ${dinero(tuya.monto - rec.monto)} menos que la tuya.`));
+  else if (tuya?.recomendada) cu.append(el('p', '', `La tuya es la recomendada, con ${dinero(tuya.monto)}. Te avisamos cuando salga la orden de compra o la resolución.`));
+  else if (rec) cu.append(el('p', '', `La recomendada fue ${rec.empresa}, con ${dinero(rec.monto)}.`));
+  cu.append(el('p', '', 'Ver el cuadro completo en alphatend →'));
+  c.append(cab, cu);
+  return c;
+}
+function avanzar(m, fase) { m.fase = fase; guardar(); pintarMias(); toast(fase === 'cerro' ? 'PanamaCompra abrió las ofertas: así te queda la tarjeta, y te llega el correo.' : 'Salió la resolución.'); }
+function pintarTodo() { pintarTablero(); pintarMias(); }
+function reiniciar() { estado = { mias: estado.mias.filter((m) => m.real), fuera: [], interesa: [] }; guardar(); pintarTodo(); abrir('tablero'); }
+
+// ── Pruébalo en vivo: el enlace de PanamaCompra → pliego y cuadro, leídos de su API pública ─────────────────
+const API = 'https://apisv3.panamacompra.gob.pa';
+function delEnlace(url) {
+  const trozos = String(url).trim().split(/[/#?]/).filter((x) => x.length > 20);
+  for (const t of trozos.reverse()) {
+    for (const cand of [t, [...t].reverse().join('')]) {
+      try {
+        const b = cand.replace(/-/g, '+').replace(/_/g, '/'); const j = JSON.parse(atob(b + '='.repeat((4 - (b.length % 4)) % 4)));
+        if (Number.isInteger(j.i) && Number.isInteger(j.tp)) return { flujos: j.i, tipo: j.tp };
+      } catch { /* sigue */ }
+    }
+  }
+  return null;
+}
+const limpio = (v) => (v == null ? null : String(v).replace(/\s+/g, ' ').trim() || null);
+const num = (v) => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : null; };
+// Solo los campos que hacen falta; los de contacto (nombres, teléfonos, correos) ni se leen.
+function camposPliego(j) {
+  const m = new Map();
+  const ver = (x) => { if (Array.isArray(x)) return x.forEach(ver); if (x && typeof x === 'object') { if ('nombre' in x && 'value' in x && typeof x.value !== 'object') { const k = String(x.nombre).trim().toLowerCase(); if (!m.has(k)) m.set(k, limpio(x.value)); } Object.values(x).forEach(ver); } };
+  ver(j);
+  const v = (...ks) => { for (const k of ks) if (m.get(k)) return m.get(k); return null; };
+  return {
+    numero: v('número de proceso'), tipo: v('tipo de proceso'), titulo: v('título', 'descripción') || 'Compra sin título',
+    entidad: v('entidad'), cierreTexto: v('fecha y hora presentación de cotizaciones', 'fecha y hora presentación de propuestas'),
+  };
+}
+// «16-10-2026 - 08:00 AM a 12:00 PM» → la fecha y hora del cierre (la de la derecha)
+function cierreIso(t) {
+  if (!t) return null;
+  const f = t.match(/(\d{2})-(\d{2})-(\d{4})/); if (!f) return null;
+  const hs = [...t.matchAll(/(\d{1,2}):(\d{2})\s*(AM|PM)/gi)]; const h = hs[hs.length - 1];
+  let hh = h ? Number(h[1]) % 12 + (/pm/i.test(h[3]) ? 12 : 0) : 23; const mm = h ? h[2] : '59';
+  return `${f[3]}-${f[2]}-${f[1]}T${String(hh).padStart(2, '0')}:${mm}:00-05:00`;
+}
+function leerCuadro(r) {
+  if (!r || (!Array.isArray(r.ofertasGlobal) && !Array.isArray(r.ofertasRenglon))) return null;
+  const por = new Map();
+  for (const g of r.ofertasGlobal || []) {
+    const items = g.procesosOfertasItems || [];
+    por.set(g.idProponente ?? g.id, { empresa: limpio(g.empresa?.nombreComercial), monto: num(g.precioTotal) || num(items.reduce((a, it) => a + (num(it.precioTotal) || 0), 0)),
+      descalificada: g.evaluado === 1 && (g.cumple === 0 || items.some((it) => it.cumple === 0)), recomendada: g.esAdjudicado === 1 || items.some((it) => it.esAdjudicado === 1) });
+  }
+  for (const ren of r.ofertasRenglon || []) for (const it of ren?.procesosOfertasItems || []) {
+    const k = it.idProponente ?? it.idOferta ?? it.id; if (k == null || (por.has(k) && !por.get(k).porRenglon)) continue;
+    const o = por.get(k) || { empresa: limpio(it.empresa?.nombreComercial), monto: 0, descalificada: false, recomendada: false, porRenglon: true };
+    o.monto += num(it.precioTotal) || 0; if (it.esAdjudicado === 1) o.recomendada = true; por.set(k, o);
+  }
+  return [...por.values()].map(({ porRenglon, ...o }) => ({ ...o, monto: o.monto ? Math.round(o.monto * 100) / 100 : null })).filter((o) => o.empresa).sort((a, b) => (a.monto ?? Infinity) - (b.monto ?? Infinity));
+}
+const traer = async (u) => { const r = await fetch(u, { credentials: 'omit' }); if (!r.ok) throw new Error(`PanamaCompra respondió ${r.status}`); return r.json(); };
+
+async function seguirReal(enlace, monto, nombre) {
+  const err = $('#error-real'); err.hidden = true;
+  const p = delEnlace(enlace);
+  if (!p) { err.textContent = 'No reconozco ese enlace. Copia el del pliego o el del cuadro de cotizaciones de PanamaCompra.'; err.hidden = false; return; }
+  const boton = $('#form-real [type=submit]'); boton.disabled = true; boton.textContent = 'Leyendo PanamaCompra…';
+  try {
+    const pl = camposPliego(await traer(`${API}/procesos-configuracion/pagina-componentes-publico/${p.tipo}/procesoVistaPliego/${p.flujos}`));
+    let ofertas = null;
+    try { ofertas = leerCuadro((await traer(`${API}/documentos-actos-publico/cuadroPropuesta/${p.tipo}/procesoVistaCuadroPropuesta/${p.flujos}`))?.result ?? null); } catch { ofertas = null; }
+    const cierre = cierreIso(pl.cierreTexto);
+    const cerro = cierre && new Date(cierre) <= new Date();
+    const conPrecios = ofertas?.length && ofertas.every((o) => o.monto);
+    const m = { id: `real-${p.tipo}-${p.flujos}`, real: true, numero: pl.numero || `${p.tipo}-${p.flujos}`, tipo: pl.tipo || '', titulo: pl.titulo, entidad: pl.entidad || '',
+      cierre, monto, nombre, marcada: new Date().toISOString(), leido: new Date().toISOString(),
+      sinCuadro: /compra menor/i.test(pl.tipo || '') && !ofertas?.length, ofertas: cerro && conPrecios ? ofertas : [], fase: cerro && conPrecios ? 'cerro' : 'espera' };
+    estado.mias = [m, ...estado.mias.filter((x) => x.id !== m.id)]; guardar(); pintarMias(); abrir('mias');
+    $('#p-mias').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    toast(m.fase === 'cerro' ? `Leída en vivo: ${m.ofertas.length} ofertas.` : 'Leída en vivo: todavía no se pueden ver las ofertas.');
+  } catch (e) {
+    err.textContent = `No pude leer esa compra en PanamaCompra (${e.message}). Prueba otra vez en un momento.`; err.hidden = false;
+  } finally { boton.disabled = false; boton.textContent = 'Seguir esta compra'; }
+}
+$('#form-real').addEventListener('submit', (ev) => { ev.preventDefault(); seguirReal($('#enlace').value, numero($('#monto-real').value), limpio($('#nombre-real').value)); });
+$('#ejemplo-real').addEventListener('click', () => {
+  // La cotización en línea 2026-3-90-01-08-CL-000655 (cerró el 16-oct-2026): el enlace es el del cuadro de cotizaciones.
+  $('#enlace').value = 'https://www.panamacompra.gob.pa/Inicio/portal-interno/#/proceso/cotizacion-en-linea/cuadro/9JjOiAHdiwCOxQDN4ATM6ISaiwiIhR3clVHcvJHUvJHZhV3QhR3cpZ1bzV2YvJHciojIwJye';
+  $('#monto-real').value = '2,750.00'; $('#nombre-real').value = '';
+  seguirReal($('#enlace').value, 2750, null);
+});
+
+pintarTodo();
+</script>
+</body>
+</html>
