@@ -21,7 +21,8 @@ const EJEMPLOS = [
   {
     id: 'ej-menor', acto: 'EJEMPLO-CM-000310', tipo: 'Compra menor hasta 10,000', titulo: '40 galones de pintura de tráfico amarilla',
     ent: 'MOP', entidad: 'Ministerio de Obras Públicas (ejemplo)', rubro: 'Pinturas', prov: 'Veraguas', estimado: 3400, cierre: enDias(1, 12), pub: enDias(0, 8),
-    habitual: 'Compra habitual: cada ~6 meses', items: 1, suelen: '2 oferentes', propuesta: 3150, sinCuadro: true,
+    habitual: 'Compra habitual: cada ~6 meses', items: 1, suelen: '2 oferentes', propuesta: 3150,
+    rivales: [['Pinturas del Istmo, S.A.', 3080], ['Señalización Vial de Veraguas', 3390]],
   },
 ];
 
@@ -128,19 +129,26 @@ function cuenta(m) {
 }
 function estadoCorto(m) {
   const e = datosDe(m);
-  if (e.sinCuadro) return el('span', 'demo-estado demo-estado--menor', 'sin cuadro');
-  if (m.fase === 'espera') return el('span', 'demo-estado demo-estado--espera', `cierra ${fechaCorta(e.cierre)}`);
+  if (e.sinCuadro) return el('span', 'demo-estado demo-estado--menor', 'sin cuadro público');
+  if (m.fase === 'espera') return el('span', 'demo-estado demo-estado--espera', yaCerro(e) ? 'ya cerró' : `cierra ${fechaCorta(e.cierre)}`);
   const c = cuenta(m);
   if (m.fase === 'adjudicada') return el('span', 'demo-estado demo-estado--adj', c.rec?.tuya ? 'adjudicada a ti' : 'adjudicada');
   if (c.tuya?.recomendada) return el('span', 'demo-estado demo-estado--rec', 'la tuya, recomendada');
   return el('span', 'demo-estado demo-estado--cerro', c.tuya ? `${c.hipotetica ? 'quedabas ' : 'quedaste '}${ordinal(c.i + 1)} de ${c.lista.length}` : `${c.ofertas.length} ofertas`);
 }
+const yaCerro = (e) => !!e.cierre && Date.parse(e.cierre) <= Date.now();
 const bloque = (titulo, ...hijos) => { const s = el('div', 'pliego-vivo__bloque'); s.append(el('h3', 'pliego-vivo__h3', titulo), ...hijos); return s; };
 function resultado(m) {
   const e = datosDe(m);
   const r = el('div', 'demo-resultado');
+  // Los mismos textos que el producto (src/scripts/cotizadas-tablero.ts). El 20-oct decía aquí que las compras menores
+  // no publican cuadro, y no es así: la cotización en línea lo publica (src/lib/mis-cotizaciones.mjs, `faseDe`).
   if (e.sinCuadro) {
-    r.append(bloque('Quién ofertó y a qué precio', el('p', 'pliego-vivo__nota', 'PanamaCompra no publica el cuadro de ofertas de las compras menores. Si el ganador llega en los datos que PanamaCompra publica cada día, te lo decimos aquí y por correo.')));
+    r.append(bloque('Quién ofertó y a qué precio', el('p', 'pliego-vivo__nota', 'Pasó una semana del cierre y PanamaCompra no ha publicado las ofertas de esta compra. La seguimos mirando cada pocos días.')));
+    return r;
+  }
+  if (m.fase === 'espera' && yaCerro(e)) {
+    r.append(bloque('Quién ofertó y a qué precio', el('p', 'pliego-vivo__nota', 'Ya cerró. PanamaCompra todavía no enseña las ofertas; suele hacerlo en el acto de apertura. Lo volvemos a leer cada vez que abres esta lista.')));
     return r;
   }
   if (m.fase === 'espera') {
@@ -316,7 +324,8 @@ async function seguirReal(enlace, monto, nombre) {
     const listo = cierre && new Date(cierre) <= new Date() && ofertas?.length && ofertas.every((o) => o.monto);
     const m = { id: `real-${p.tipo}-${p.flujos}`, real: true, acto: pl.acto || `${p.tipo}-${p.flujos}`, tipo: pl.tipo || '', titulo: pl.titulo, ent: pl.entidad || '', entidad: pl.entidad || '',
       rubro: pl.tipo || '', prov: pl.prov || '', estimado: pl.ref, cierre, monto, nombre, marcada: new Date().toISOString(), leido: new Date().toISOString(),
-      sinCuadro: /compra menor/i.test(pl.tipo || '') && !ofertas?.length, ofertas: listo ? ofertas : [], fase: listo ? 'cerro' : 'espera', abrir: true };
+      // Como `faseDe` del producto: «sin cuadro» solo pasada una semana del cierre sin ofertas, nunca por el tipo.
+      sinCuadro: !!cierre && Date.now() - Date.parse(cierre) > 7 * 864e5 && !ofertas?.length, ofertas: listo ? ofertas : [], fase: listo ? 'cerro' : 'espera', abrir: true };
     estado.mias = [m, ...estado.mias.filter((x) => x.id !== m.id)]; estado.vista = 'mias'; guardar(); pintar();
     $('.feed__list')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     toast(m.fase === 'cerro' ? `Leída en vivo de PanamaCompra: ${m.ofertas.length} ofertas.` : 'Leída en vivo: todavía no se pueden ver las ofertas.');
